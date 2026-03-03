@@ -1,118 +1,94 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quran Video Maker</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Amiri|Tajawal">
     <style>
         body {
             background-color: #0a0a0f;
             color: #e8e0d0;
-            font-family: 'Tajawal', sans-serif;
-            direction: rtl;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Amiri', sans-serif;
+            text-align: center;
         }
         h1 {
             color: #c9a84c;
+            text-shadow: 2px 2px 4px #000;
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
+        canvas {
+            border: 2px solid #c9a84c;
         }
-        .tab {
-            display: none;
+        .controls {
+            margin: 20px;
         }
-        .tab.active {
-            display: block;
+        .glow {
+            text-shadow: 0 0 10px #c9a84c;
         }
-        .hidden {
-            display: none;
-        }
-        /* Additional styles can be added here */
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Quran Video Maker</h1>
-        <div>
-            <button onclick="showTab('manual-input')">Manual Input</button>
-            <button onclick="showTab('quran-api')">Quran API</button>
-        </div>
-        <div id="manual-input" class="tab active">
-            <textarea placeholder="Enter your text here..."></textarea>
-        </div>
-        <div id="quran-api" class="tab">
-            <select id="surah-select">
-                <option value="1">الفاتحة</option>
-                <option value="2">البقرة</option>
-                <option value="3">آل عمران</option>
-                <!-- Add more Surahs as needed -->
-            </select>
-            <input type="number" placeholder="من الآية" min="1" />
-            <input type="number" placeholder="إلى الآية" min="1" />
-        </div>
-        <h2>Choose Reciter</h2>
-        <select id="reciter-select">
-            <option>Mishary Al-Afasy</option>
-            <option>Abdulbasit</option>
-            <option>Saad Al-Ghamdi</option>
-            <option>Maher Al-Mueaqly</option>
-            <option>Islam Sobhi</option>
-            <option>Yasser Al-Dosari</option>
-            <option>Al-Minshawi</option>
-            <option>Al-Husary</option>
-            <option>Abu Bakr Al-Shatri</option>
-            <option>Ahmed Al-Ajmi</option>
-            <option>Mohammad Ayyoub</option>
-            <option>As-Sudais</option>
+    <h1 class="glow">Quran Video Maker</h1>
+    <div class="controls">
+        <select id="reciter">
+            <option value="3">Mishary</option>
+            <option value="5">Abdulbasit</option>
+            <option value="42">Saad</option>
+            <option value="4">Maher</option>
+            <option value="39">Islam</option>
+            <option value="8">Yasser</option>
+            <option value="24">Minshawi</option>
+            <option value="25">Husary</option>
+            <option value="35">AbuBakr</option>
+            <option value="40">Ahmed</option>
+            <option value="41">Muhammad</option>
+            <option value="9">Sudais</option>
         </select>
-        <h2>Background Options</h2>
-        <select id="background-select">
-            <option>خلفيات المساجد 1</option>
-            <option>خلفيات المساجد 2</option>
-            <option>طريق</option>
-            <option>صحراء</option>
-            <option>سماء</option>
-            <option>طبيعة</option>
-            <option>ماء</option>
-            <option>قرآن</option>
-        </select>
-        <input type="color" id="solid-color" />
-        <h2>Text Formatting</h2>
-        <input type="range" id="font-size" min="16" max="72" />
-        <input type="color" id="text-color" />
-        <h2>Text Effects</h2>
-        <select id="text-effect">
-            <option>Glow</option>
-            <option>Shadow</option>
-            <option>None</option>
-        </select>
-        <h2>Video Settings</h2>
-        <input type="range" id="background-opacity" min="0" max="100" />
-        <select id="aspect-ratio">
-            <option>9:16</option>
-            <option>1:1</option>
-            <option>16:9</option>
-        </select>
-        <select id="duration">
-            <option>30s</option>
-            <option>1m</option>
-            <option>2m</option>
-        </select>
-        <button onclick="generateVideo()">Generate Video</button>
+        <input type="color" id="bgColor" value="#ffffff">
+        <button id="generateVideo">Generate Video</button>
     </div>
+    <canvas id="videoCanvas" width="720" height="1280"></canvas>
     <script>
-        function showTab(tabId) {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.getElementById(tabId).classList.add('active');
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawBackground() {
+            ctx.fillStyle = document.getElementById('bgColor').value;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        function generateVideo() {
-            // Video generation logic here
+
+        async function startRecording() {
+            const stream = canvas.captureStream(30);
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'quran-video.webm';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            mediaRecorder.start();
+            return mediaRecorder;
         }
+
+        document.getElementById('generateVideo').onclick = async () => {
+            drawBackground();
+            const recorder = await startRecording();
+            setTimeout(() => {
+                recorder.stop();
+            }, 30000); // Adjust duration here: 30000ms = 30s
+        };
     </script>
 </body>
 </html>
